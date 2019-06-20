@@ -1,0 +1,60 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                             http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context
+                             http://www.springframework.org/schema/context/spring-context-2.5.xsd
+                           http://www.springframework.org/schema/tx
+                             http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+
+  <bean id="dataSource" class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
+    <property name="driverClass" value="org.h2.Driver" />
+    <property name="url" value="jdbc:h2:mem:flowable;DB_CLOSE_DELAY=1000" />
+    <property name="username" value="sa" />
+    <property name="password" value="" />
+  </bean>
+
+  <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    <property name="dataSource" ref="dataSource" />
+  </bean>
+
+  <bean id="processEngineConfiguration" class="org.flowable.spring.SpringProcessEngineConfiguration">
+    <property name="dataSource" ref="dataSource" />
+    <property name="transactionManager" ref="transactionManager" />
+    <property name="databaseSchemaUpdate" value="true" />
+    <property name="asyncExecutorActivate" value="false" />
+    
+     <!--<property name="deploymentResources" value="classpath*:*.bpmn20.xml" />-->
+    <!-- 当使用ProcessEngineFactoryBean时，默认BPMN流程中所有的表达式都可以“看见”所有的Spring bean。可以通过配置的map，限制
+    	表达式能使用的bean，甚至可以完全禁止表达式使用bean。下面的例子只暴露了一个bean（printer），可以使用“printer”作为key访问。
+    	要完全禁止表达式使用bean，可以将SpringProcessEngineConfiguration的‘beans’参数设为空list。如果不设置‘beans’参数，则
+    	上下文中的所有bean都将可以使用。 -->
+    <property name="beans">
+    <map>
+      <entry key="printer" value-ref="printer" />
+    </map>
+  </property>
+  </bean>
+
+  <bean id="processEngine" class="org.flowable.spring.ProcessEngineFactoryBean">
+    <property name="processEngineConfiguration" ref="processEngineConfiguration" />
+  </bean>
+  <tx:annotation-driven transaction-manager="transactionManager"/>
+
+  <bean id="userBean" class="com.example.demo.bean.UserBean">
+    <property name="runtimeService" ref="runtimeService" />
+  </bean>
+  	
+  <bean id="printer" class="com.example.demo.bean.Printer" />
+  <bean id="flowableRule" class="org.flowable.engine.test.FlowableRule">
+  	<property name="processEngine" ref="processEngine" />
+  </bean>
+  <bean id="repositoryService" factory-bean="processEngine" factory-method="getRepositoryService" />
+  <bean id="runtimeService" factory-bean="processEngine" factory-method="getRuntimeService" />
+  <bean id="taskService" factory-bean="processEngine" factory-method="getTaskService" />
+  <bean id="historyService" factory-bean="processEngine" factory-method="getHistoryService" />
+  <bean id="managementService" factory-bean="processEngine" factory-method="getManagementService" />
+     
+</beans>
